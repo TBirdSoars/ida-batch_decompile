@@ -229,7 +229,7 @@ class IdaDecompileBatchController(object):
             raise Exception("hexrays decompiler is not available :(")
 
     def _init_target(self):
-        self.target_path = idc.GetInputFilePath()
+        self.target_path = ida_nalt.get_input_file_path()
         self.target_file = idc.GetInputFile()
         self.target_dir = os.path.split(self.target_path)[0]
         logger.debug("reinitializing target: %r" % self.target_file)
