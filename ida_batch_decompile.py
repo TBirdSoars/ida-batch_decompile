@@ -219,7 +219,7 @@ class IdaDecompileBatchController(object):
         self.chk_decompile_imports_recursive = False
         self.chk_decompile_alternative = False
         # self.ida_home = idaapi.idadir(".")
-        self.ida_home = GetIdaDirectory()
+        self.ida_home = idadir()
         # wait for ida analysis to finish
         self.wait_for_analysis_to_finish()
         if not idaapi.init_hexrays_plugin():
