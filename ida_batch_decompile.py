@@ -415,7 +415,7 @@ class IdaDecompileBatchController(object):
         return subprocess.check_call(' '.join(cmd), shell=True)
 
 
-class TestEmbeddedChooserClass(Choose,Choose2):
+class TestEmbeddedChooserClass(Choose):
     """
     A simple chooser to be used as an embedded chooser
     """
@@ -424,10 +424,7 @@ class TestEmbeddedChooserClass(Choose,Choose2):
                          title,
                          [["Type", 10], ["Name", 10], ["Path", 30]],
                          flags=flags)
-        Choose2.__init__(self,
-                         title,
-                         [ ["Type", 10], ["Name", 10],  ["Path", 30] ],
-                         embedded=True, width=50, height=10, flags=flags)
+                         #embedded=True, width=50, height=10, flags=flags)
         self.n = 0
         self.items = []
         self.icon = 5
@@ -468,7 +465,7 @@ class DecompileBatchForm(Form):
 
     def __init__(self, idbctrl, enumerate_imports=True, enumerate_other=False):
         self.idbctrl = idbctrl
-        self.EChooser = TestEmbeddedChooserClass("Batch Decompile", flags=Choose2.CH_MULTI)
+        self.EChooser = TestEmbeddedChooserClass("Batch Decompile", flags=Choose.CH_MULTI)
         self.propagateItems(enumerate_imports=enumerate_imports, enumerate_other=enumerate_other)
         Form.__init__(self,
                       r"""Ida Batch Decompile ...
