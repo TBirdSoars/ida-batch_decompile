@@ -54,7 +54,7 @@ class IdaLocation(object):
             self.start = _func.startEA
             self.end = _func.endEA  # ==FindFuncEnd(location)
             self.func_offset = self.start - self.at
-        except Exception, e:
+        except Exception as e:
             logger.exception(e)
         if not self.name:
             self.indirect = True
@@ -79,7 +79,7 @@ class IdaLocation(object):
         """
         try:
             return idaapi.decompile(self.at)
-        except idaapi.DecompilationFailure, e:
+        except idaapi.DecompilationFailure as e:
             return repr(str(e))
         text = str(idaapi.decompile(self.at)).strip()
         '''
@@ -171,8 +171,8 @@ class IdaHelper(object):
             except Exception as e:
                 print ("Annotate XRefs: %r"%e)
                 stats['errors'] += 1
-        print "[+] stats: %r" % stats
-        print "[+] Done!"
+        print ("[+] stats: %r" % stats)
+        print ("[+] Done!")
 
     @staticmethod
     def annotate_functions_with_local_var_size():
@@ -194,11 +194,11 @@ class IdaHelper(object):
                 comment.append("*******************")
                 SetFunctionCmt(f.start, '\n'.join(comment), 0)
                 stats['annotated_functions'] += 1
-            except Exception, e:
+            except Exception as e:
                 print ("Annotate Funcs: %r" % e)
                 stats['errors'] += 1
-        print "[+] stats: %r" % stats
-        print "[+] Done!"
+        print ("[+] stats: %r" % stats)
+        print ("[+] Done!")
 
 
 class IdaDecompileBatchController(object):
@@ -280,7 +280,7 @@ class IdaDecompileBatchController(object):
                                                   recursive = self.chk_decompile_imports_recursive,
                                                   experimental_decomile_cgraph = self.chk_decompile_alternative)
                     files_decompiled.append(image_path)
-                except subprocess.CalledProcessError, cpe:
+                except subprocess.CalledProcessError as cpe:
                     logger.warning("[!] failed to decompile %r - %r" % (image_path, cpe))
 
             self.remove_tempdir()
@@ -446,7 +446,7 @@ class TestEmbeddedChooserClass(Choose,Choose2):
         return n
 
     def OnRefresh(self, n):
-        print "refresh %s"%n
+        print ("refresh %s"%n)
 
     def OnSelectionChange(self, sel_list):
         self.selected = sel_list
@@ -549,7 +549,7 @@ class DecompileBatchForm(Form):
                                               recursive=self.idbctrl.chk_decompile_imports_recursive,
                                               experimental_decomile_cgraph=self.idbctrl.chk_decompile_alternative)
                 files_decompiled.append(image_path)
-            except subprocess.CalledProcessError, cpe:
+            except subprocess.CalledProcessError as cpe:
                 logger.warning("[!] failed to decompile %r - %r" % (image_path, cpe))
 
         self.idbctrl.remove_tempdir()
