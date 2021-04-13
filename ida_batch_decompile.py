@@ -247,8 +247,8 @@ class IdaDecompileBatchController(object):
 
     def wait_for_analysis_to_finish(self):
         logger.debug("[+] waiting for analysis to finish...")
-        ida_auto.auto_wait()
-        ida_auto.auto_wait()
+        #ida_auto.auto_wait()
+        #ida_auto.auto_wait()
         logger.debug("[+] analysis finished.")
 
     def load_plugin_decompiler(self):
