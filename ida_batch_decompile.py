@@ -204,7 +204,7 @@ class IdaHelper(object):
 class IdaDecompileBatchController(object):
     def __init__(self):
         self.is_windows = sys.platform.startswith('win')
-        self.is_ida64 = GetIdbPath().endswith(".i64")  # hackhackhack - check if we're ida64 or ida32
+        self.is_ida64 = get_idb_path().endswith(".i64")  # hackhackhack - check if we're ida64 or ida32
         logger.debug("[+] is_windows: %r" % self.is_windows)
         logger.debug("[+] is_ida64: %r" % self.is_ida64)
         self.my_path = os.path.abspath(__file__)
