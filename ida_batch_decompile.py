@@ -594,7 +594,6 @@ class DecompileBatchForm(Form):
 
 if idaapi.IDA_SDK_VERSION >= 700:
     class IdaDecompileUiActionHandler(idaapi.action_handler_t):
-
         def __init__(self, caller):
             idaapi.action_handler_t.__init__(self)
             self.caller = caller
@@ -605,9 +604,6 @@ if idaapi.IDA_SDK_VERSION >= 700:
 
         def update(self, ctx):
             return idaapi.AST_ENABLE_ALWAYS
-
-            def update(self, ctx):
-                return idaapi.AST_ENABLE_ALWAYS
 
 
 class IdaDecompileBatchPlugin(idaapi.plugin_t):
@@ -631,11 +627,9 @@ class IdaDecompileBatchPlugin(idaapi.plugin_t):
         logger.debug("[+] setting up menus for ida version %s" % idaapi.IDA_SDK_VERSION)
 
         if idaapi.IDA_SDK_VERSION >= 700:
-            # >= 700
             action_desc = idaapi.action_desc_t("tintinweb:batchdecompile:load", self.wanted_name, IdaDecompileUiActionHandler(self))
             idaapi.register_action(action_desc)
             idaapi.attach_action_to_menu(''.join(self.wanted_menu), "tintinweb:batchdecompile:load", idaapi.SETMENU_APP)
-
         else:
             menu = idaapi.add_menu_item(self.wanted_menu[0],
                                         self.wanted_menu[1],
@@ -643,7 +637,6 @@ class IdaDecompileBatchPlugin(idaapi.plugin_t):
                                         SETMENU_INS,
                                         self.menu_config,
                                         NO_ARGS)
-
             self.menuitems.append(menu)
 
         return idaapi.PLUGIN_KEEP
@@ -666,76 +659,72 @@ class IdaDecompileBatchPlugin(idaapi.plugin_t):
         logger.debug("[+] %s.set_ctrl(%r)" % (self.__class__.__name__, idbctrl))
         self.idbctrl = idbctrl
 
+    def PLUGIN_ENTRY(mode=None):
+        """ check execution mode:
+            a) as Plugin, return plugin object
+            b) as script as part of a batch execution, do not spawn plugin object
+         """
+        logging.basicConfig(level=logging.DEBUG,
+                            format="[%(name)s/%(process)s][%(levelname)-10s] [%(module)s.%(funcName)-14s] %(message)s")
+        logger.setLevel(logging.DEBUG)
+        # always wait for analysis to finish
+        logger.debug("[+] initializing IdaDecompileBatchPlugin")
+        # create our controller interface
+        idbctrl = IdaDecompileBatchController()
+        # parse cmdline
+        if mode == '__main__':
+            # cmdline mode
+            if len(idc.ARGV) > 1:
+                # cmdline batch mode
+                logger.debug("[+] Mode: commandline")
+                parser = OptionParser()
+                parser.add_option("-o", "--output", dest="output",
+                                  help="output path")
+                parser.add_option("-S", "--annotate-stackvar-size",
+                                  action="store_true", default=False,
+                                  help="Generate stack variable size annotations")
+                parser.add_option("-X", "--annotate-xrefs",
+                                  action="store_true", default=False,
+                                  help="Generate xref annotations")
+                parser.add_option("-I", "--imports",
+                                  action="store_true", default=False,
+                                  help="try to decompile files referenced in IAT")
+                parser.add_option("-R", "--recursive",
+                                  action="store_true", default=False,
+                                  help="Recursive decompile files/imports")
+                parser.add_option("-Z", "--experimental-decompile-cgraph",
+                                  action="store_true", default=False,
+                                  help="[experimental] decompile funcs referenced in calltree manually")
 
-def PLUGIN_ENTRY(mode=None):
-    """ check execution mode:
+                options, args = parser.parse_args(idc.ARGV[1:])
+                # set options
+                idbctrl.output_path = options.output
+                idbctrl.chk_annotate_stackvar_size = options.annotate_stackvar_size
+                idbctrl.chk_annotate_xrefs = options.annotate_xrefs
+                idbctrl.chk_decompile_imports = options.imports
+                idbctrl.chk_decompile_imports_recursive = options.recursive
+                idbctrl.chk_decompile_alternative = options.experimental_decompile_cgraph
+                # set all the idbctrl checkboxes and files
+                idbctrl.run()
+                idc.Exit(0)
+                # return
 
-        a) as Plugin, return plugin object
-        b) as script as part of a batch execution, do not spawn plugin object
-     """
-    logging.basicConfig(level=logging.DEBUG,
-                        format="[%(name)s/%(process)s][%(levelname)-10s] [%(module)s.%(funcName)-14s] %(message)s")
-    logger.setLevel(logging.DEBUG)
-    # always wait for analysis to finish
-    logger.debug("[+] initializing IdaDecompileBatchPlugin")
-    # create our controller interface
-    idbctrl = IdaDecompileBatchController()
-    # parse cmdline
-    if mode == '__main__':
-        # cmdline mode
-        if len(idc.ARGV) > 1:
-            # cmdline batch mode
-            logger.debug("[+] Mode: commandline")
-            parser = OptionParser()
-            parser.add_option("-o", "--output", dest="output",
-                              help="output path")
-            parser.add_option("-S", "--annotate-stackvar-size",
-                              action="store_true", default=False,
-                              help="Generate stack variable size annotations")
-            parser.add_option("-X", "--annotate-xrefs",
-                              action="store_true", default=False,
-                              help="Generate xref annotations")
-            parser.add_option("-I", "--imports",
-                              action="store_true", default=False,
-                              help="try to decompile files referenced in IAT")
-            parser.add_option("-R", "--recursive",
-                              action="store_true", default=False,
-                              help="Recursive decompile files/imports")
-            parser.add_option("-Z", "--experimental-decompile-cgraph",
-                              action="store_true", default=False,
-                              help="[experimental] decompile funcs referenced in calltree manually")
+            logger.debug("[+] Mode: commandline w/o args")
+            # PluginMode
+            plugin = IdaDecompileBatchPlugin()
+            plugin.set_ctrl(idbctrl=idbctrl)
+            plugin.init()
+            logger.info("[i] %s loaded, see Menu: %s" % (IdaDecompileBatchPlugin.wanted_name,
+                                                         IdaDecompileBatchPlugin.wanted_menu))
+            #plugin.menu_config()
+            return plugin
 
-            options, args = parser.parse_args(idc.ARGV[1:])
-            # set options
-            idbctrl.output_path = options.output
-            idbctrl.chk_annotate_stackvar_size = options.annotate_stackvar_size
-            idbctrl.chk_annotate_xrefs = options.annotate_xrefs
-            idbctrl.chk_decompile_imports = options.imports
-            idbctrl.chk_decompile_imports_recursive = options.recursive
-            idbctrl.chk_decompile_alternative = options.experimental_decompile_cgraph
-            # set all the idbctrl checkboxes and files
-            idbctrl.run()
-            idc.Exit(0)
-            # return
+        else:
+            logger.debug("[+] Mode: plugin")
+            # PluginMode
+            plugin = IdaDecompileBatchPlugin()
+            plugin.set_ctrl(idbctrl=idbctrl)
+            return plugin
 
-        logger.debug("[+] Mode: commandline w/o args")
-        # PluginMode
-        plugin = IdaDecompileBatchPlugin()
-        plugin.set_ctrl(idbctrl=idbctrl)
-        plugin.init()
-        logger.info("[i] %s loaded, see Menu: %s" % (IdaDecompileBatchPlugin.wanted_name,
-                                                     IdaDecompileBatchPlugin.wanted_menu))
-        #plugin.menu_config()
-        return plugin
-
-    else:
-        logger.debug("[+] Mode: plugin")
-        # PluginMode
-        plugin = IdaDecompileBatchPlugin()
-        plugin.set_ctrl(idbctrl=idbctrl)
-        return plugin
-
-
-if __name__ == '__main__':
-    PLUGIN_ENTRY(mode=__name__)
-
+        if __name__ == '__main__':
+            PLUGIN_ENTRY(mode=__name__)
