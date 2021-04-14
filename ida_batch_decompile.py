@@ -45,7 +45,7 @@ class IdaLocation(object):
     def __init__(self, location):
         self.at = location
         # self.name = GetFunctionName(location)
-        self.name = GetFuncOffset(location)
+        self.name = get_func_off_str(location)
         self.start = 0
         self.end = 0
         self.func_offset = 0
@@ -98,13 +98,13 @@ class IdaLocation(object):
 
     def get_function_args(self):
         # find the stack frame
-        stack = GetFrame(self.start)
-        stack_size = GetStrucSize(stack)
+        stack = get_func_attr(self.start, FUNCATTR_FRAME)
+        stack_size = get_struc_size(stack)
         # figure out all of the variable names
         # base is either ' s' ... saved register or ' r' ... return address
-        base = GetMemberOffset(stack, ' s')
+        base = get_member_offset(stack, ' s')
         if base == -1:
-            base = GetMemberOffset(stack, ' r')
+            base = get_member_offset(stack, ' r')
         if base == -1:
             # no ' s' no ' r' assume zero
             base == 0
@@ -112,13 +112,13 @@ class IdaLocation(object):
 
         for memberoffset in xrange(stack_size):
             previous = stack_vars[-1] if len(stack_vars) else None
-            var_name = GetMemberName(stack, memberoffset)
+            var_name = get_member_name(stack, memberoffset)
             if not var_name or (previous and var_name == previous.get("name")):
                 # skip that entry, already processed
                 continue
 
-            offset = GetMemberOffset(stack, var_name) - base
-            size = GetMemberSize(stack, memberoffset)
+            offset = get_member_offset(stack, var_name) - base
+            size = get_member_size(stack, memberoffset)
             if previous:
                 diff = offset - previous['offset']
                 previous['diff_size'] = diff
@@ -154,7 +154,7 @@ class IdaHelper(object):
         stats = {'annotated_functions': 0, 'errors': 0}
         for f in IdaHelper.get_functions():
             try:
-                function_comment = GetFunctionCmt(f.start, 0)
+                function_comment = get_func_cmt(f.start, 0)
                 if '**** XREFS ****' in function_comment:
                     logger.debug("[i] skipping function %r, already annotated." % f.name)
                     continue
@@ -166,7 +166,7 @@ class IdaHelper(object):
                 comment.append("* # %d" % len(xrefs))
                 comment.append(', '.join(xrefs))
                 comment.append("*******************")
-                SetFunctionCmt(f.start, '\n'.join(comment), 0)
+                set_func_cmt(f.start, '\n'.join(comment), 0)
                 stats['annotated_functions'] += 1
             except Exception as e:
                 print ("Annotate XRefs: %r"%e)
@@ -179,7 +179,7 @@ class IdaHelper(object):
         stats = {'annotated_functions': 0, 'errors': 0}
         for f in IdaHelper.get_functions():
             try:
-                function_comment = GetFunctionCmt(f.start, 0)
+                function_comment = get_func_cmt(f.start, 0)
                 if '**** Variables ****' in function_comment:
                     logger.debug("[i] skipping function %r, already annotated." % f.name)
                     continue
@@ -192,7 +192,7 @@ class IdaHelper(object):
                 for s in stack_vars:
                     comment.append(json.dumps(s))
                 comment.append("*******************")
-                SetFunctionCmt(f.start, '\n'.join(comment), 0)
+                set_func_cmt(f.start, '\n'.join(comment), 0)
                 stats['annotated_functions'] += 1
             except Exception as e:
                 print ("Annotate Funcs: %r" % e)
@@ -256,11 +256,11 @@ class IdaDecompileBatchController(object):
         logger.debug("[+] trying to load decompiler plugins")
         if self.is_ida64:
             # 64bit plugins
-            idc.RunPlugin("hexx64", 0)
+            ida_loader.load_and_run_plugin("hexx64", 0)
         else:
             # 32bit plugins
-            idc.RunPlugin("hexrays", 0)
-            idc.RunPlugin("hexarm", 0)
+            ida_loader.load_and_run_plugin("hexrays", 0)
+            ida_loader.load_and_run_plugin("hexarm", 0)
         logger.debug("[+] decompiler plugins loaded.")
 
     def run(self):
